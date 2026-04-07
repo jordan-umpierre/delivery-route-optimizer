@@ -2,25 +2,30 @@
 
 Python delivery route optimizer that simulates multi-truck package distribution using a custom hash table, nearest-neighbor routing, and time-based package status tracking.
 
-## Overview
+## What It Demonstrates
 
-This project is a logistics delivery simulation built in Python. It loads package and distance data from CSV files, stores package records in a custom hash table, and simulates deliveries across multiple trucks using a nearest-neighbor routing approach.
-
-The program also tracks package status throughout the day so users can check whether a package is at the hub, en route, or delivered at a specific time.
+- Custom hash table implementation using separate chaining
+- CSV parsing with only Python standard-library modules
+- Distance matrix loading and lookup for route calculations
+- Greedy nearest-neighbor route selection
+- Multi-truck delivery simulation with fixed scenario constraints
+- Time-based package status reporting from a command-line interface
+- Special-case business rules for delayed packages and corrected package addresses
 
 ## Features
 
-- Custom hash table implementation for package storage and lookup
-- Multi-truck delivery simulation
-- Nearest-neighbor route selection
-- Time-based package status tracking
-- Total mileage reporting
-- Command-line interface for package status checks
-- Support for delayed packages and package 9 address correction
+- Load package and distance data from CSV files
+- Store packages in a custom hash table keyed by package ID
+- Simulate deliveries across three trucks
+- Track whether each package is delayed, at the hub, en route, or delivered at a user-entered time
+- Report total mileage across all trucks
+- Handle delayed-flight packages that arrive at 9:05 AM
+- Correct package 9's address after 10:20 AM before it is routed
 
-## Technologies Used
+## Tech Stack
 
-- Python
+- Python 3.10+
+- Python standard library only
 - CSV file processing
 - Custom data structures
 - Greedy routing heuristic
@@ -28,41 +33,43 @@ The program also tracks package status throughout the day so users can check whe
 ## Project Structure
 
 ```text
-delivery-route-optimizer/
-├── main.py
-├── hashtable.py
-├── package.py
-├── data/
-│   ├── WGUPS_Package_File.csv
-│   └── WGUPS_Distance_Table.csv
-└── README.md
+.
+|-- README.md
+`-- delivery-route-optimizer/
+    |-- main.py
+    |-- hashtable.py
+    |-- package.py
+    `-- data/
+        |-- WGUPS_Package_File.csv
+        `-- WGUPS_Distance_Table.csv
 ```
 
 ## How to Run
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/jordan-umpierre/delivery-route-optimizer.git
-   cd delivery-route-optimizer
-   ```
+Clone the repository:
 
-2. Make sure the `data` folder contains:
-   - `WGUPS_Package_File.csv`
-   - `WGUPS_Distance_Table.csv`
+```bash
+git clone https://github.com/jordan-umpierre/delivery-route-optimizer.git
+cd delivery-route-optimizer
+```
 
-3. Run the program:
-   ```bash
-   python main.py
-   ```
+Move into the Python app folder so the relative `data/` paths resolve correctly:
 
-## How It Works
+```bash
+cd delivery-route-optimizer
+python main.py
+```
 
-- Packages are loaded from a CSV file into a custom hash table
-- Distances are loaded into a matrix for route calculations
-- Each truck is assigned a set of packages
-- The program uses a nearest-neighbor heuristic to choose the next delivery stop
-- Package statuses are updated as trucks leave the hub and complete deliveries
-- Users can query package statuses at specific times through the CLI
+If your system uses `python3` instead of `python`:
+
+```bash
+python3 main.py
+```
+
+The `data/` folder should contain:
+
+- `WGUPS_Package_File.csv`
+- `WGUPS_Distance_Table.csv`
 
 ## Example Menu
 
@@ -73,12 +80,27 @@ WGUPS Package Status Interface
 3) Exit
 ```
 
+Example checks to try:
+
+- Choose option `1` and enter `08:35` to inspect early delivery status.
+- Choose option `1` and enter `10:20` to confirm package 9 uses its corrected address after the correction time.
+- Choose option `2` to print total mileage across the simulated routes.
+
+## How It Works
+
+- Packages are loaded from `data/WGUPS_Package_File.csv` into a custom hash table.
+- Distances are loaded from `data/WGUPS_Distance_Table.csv` into a matrix for route calculations.
+- Each truck is assigned a deterministic package list based on the scenario constraints.
+- The route planner repeatedly chooses the nearest remaining delivery stop.
+- Package load and delivery times are recorded during the simulation.
+- The CLI compares the user-entered time against each package's load and delivery time to show the correct status.
+
 ## Limitations
 
-- Truck assignments are currently hardcoded
-- Routing uses a greedy nearest-neighbor approach and is not guaranteed to be globally optimal
-- The program depends on the expected CSV file format
+- Truck assignments are deterministic and scenario-specific.
+- The nearest-neighbor heuristic is fast and explainable, but it is not guaranteed to find a globally optimal route.
+- The program expects the provided WGUPS CSV file format.
 
-## Author
+## Resume Bullet
 
-Jordan Umpierre
+Built a Python logistics simulation using a custom hash table, CSV-based distance matrix loading, nearest-neighbor route optimization, multi-truck delivery constraints, and a command-line status interface for time-based package tracking.
