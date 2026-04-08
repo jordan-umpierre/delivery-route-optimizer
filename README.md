@@ -106,6 +106,3 @@ WGUPS Package Status Interface
 - The nearest-neighbor heuristic is fast and explainable, but it is not guaranteed to find a globally optimal route.
 - The program expects the provided WGUPS CSV file format.
 
-## Resume Bullet
-
-Built a Python logistics simulation using a custom hash table, CSV-based distance matrix loading, nearest-neighbor route optimization, multi-truck delivery constraints, and a command-line status interface for time-based package tracking.
