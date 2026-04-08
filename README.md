@@ -51,25 +51,36 @@ Clone the repository:
 ```bash
 git clone https://github.com/jordan-umpierre/delivery-route-optimizer.git
 cd delivery-route-optimizer
+python run.py
 ```
 
-Move into the Python app folder so the relative `data/` paths resolve correctly:
+You can also run it from inside the app folder:
 
 ```bash
 cd delivery-route-optimizer
 python main.py
 ```
 
-If your system uses `python3` instead of `python`:
-
-```bash
-python3 main.py
-```
+If your system uses `python3` instead of `python`, substitute `python3` in either command.
 
 The `data/` folder should contain:
 
 - `WGUPS_Package_File.csv`
 - `WGUPS_Distance_Table.csv`
+
+## Test And Verify
+
+Run the smoke tests from the repository root:
+
+```bash
+python -m unittest discover -s tests
+```
+
+Manual checks to try:
+
+- Choose option `1` and enter `08:35` to inspect early delivery status.
+- Choose option `1` and enter `10:20` to confirm package 9 uses its corrected address after the correction time.
+- Choose option `2` to print total mileage across the simulated routes.
 
 ## Example Menu
 
@@ -79,12 +90,6 @@ WGUPS Package Status Interface
 2) View total mileage
 3) Exit
 ```
-
-Example checks to try:
-
-- Choose option `1` and enter `08:35` to inspect early delivery status.
-- Choose option `1` and enter `10:20` to confirm package 9 uses its corrected address after the correction time.
-- Choose option `2` to print total mileage across the simulated routes.
 
 ## How It Works
 

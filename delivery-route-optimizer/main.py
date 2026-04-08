@@ -1,15 +1,21 @@
-# Student ID: 011797435
-
 # WHAT: Import built-in libraries only (allowed).
 # WHY: The rubric forbids external libraries; csv/time are built-in.
 import csv
-from typing import Dict, List, Tuple
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 # WHAT: Import your custom data structures.
 # WHY: Task 2 requires a custom hash table and a Package object holding all fields.
 from hashtable import HashTable
 from package import Package
+
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+PACKAGE_CSV = DATA_DIR / "WGUPS_Package_File.csv"
+DISTANCE_CSV = DATA_DIR / "WGUPS_Distance_Table.csv"
+HUB_ADDRESS = "4001 South 700 East"
 
 
 def load_packages(csv_path: str) -> HashTable:
@@ -207,7 +213,7 @@ def deliver_truck(
 
     miles = 0.0
     current_time = start_time
-    current_loc = address_index_map[hub_key]
+    current_loc = get_location_index(hub_key, address_index_map)
 
     # If this truck must wait (driver availability / address correction), push departure forward.
     if earliest_departure is not None and current_time < earliest_departure:
@@ -285,7 +291,11 @@ TRUCK_3_IDS = [2, 9, 12, 17, 21, 22, 23, 24, 26, 27, 33, 35, 39]
 # WHAT: Quick proof that deliveries run and package 9 is not delivered before 10:20.
 # WHY: This was used for testing; the interface below is the deliverable for D1–D3.
 if __name__ == "__main__":
-    packages = load_packages("data/WGUPS_Package_File.csv")
+    packages, total_miles = build_simulation()
+
+    # Start the user interface for D1-D3 screenshots.
+    run_interface(packages, total_miles)
+    raise SystemExit
     dist_matrix, addr_map = load_distances("data/WGUPS_Distance_Table.csv")
     hub_key = "Western Governors University\n4001 South 700 East, \nSalt Lake City, UT 84107"
 
@@ -320,7 +330,7 @@ def print_package_statuses_at_time(packages: HashTable, query_time: datetime):
         # Delayed-on-flight packages are not at the hub until 9:05.
         if package_id in DELAYED_FLIGHT_PACKAGES and query_time < DELAYED_FLIGHT_TIME:
             status = "Delayed"
-        elif query_time.time() < p.load_time:
+        elif p.load_time is None or query_time.time() < p.load_time:
             status = "At Hub"
         elif p.delivery_time is None or query_time.time() < p.delivery_time:
             status = "En Route"
@@ -340,6 +350,38 @@ def print_package_statuses_at_time(packages: HashTable, query_time: datetime):
             f"{delivered_time_text}"
         )
 
+
+def parse_time_input(time_input: str) -> datetime:
+    # WHAT: Parse CLI input in 24-hour HH:MM format.
+    # WHY: Keeps the status interface from crashing on malformed input.
+    try:
+        parsed = datetime.strptime(time_input, "%H:%M")
+    except ValueError as exc:
+        raise ValueError("Time must use 24-hour HH:MM format, for example 08:35.") from exc
+
+    return datetime(2025, 1, 1, parsed.hour, parsed.minute)
+
+
+def build_simulation() -> Tuple[HashTable, float]:
+    # WHAT: Load data and run all truck deliveries once.
+    # WHY: The CLI and automated checks both rely on the same precomputed simulation state.
+    packages = load_packages(str(PACKAGE_CSV))
+    dist_matrix, addr_map = load_distances(str(DISTANCE_CSV))
+
+    # Truck 1 and Truck 2 have fixed start times based on the scenario.
+    miles1, t1_end_time, _ = deliver_truck(TRUCK_1_IDS, datetime(2025, 1, 1, 8, 0), 1, packages, dist_matrix, addr_map, HUB_ADDRESS)
+    miles2, t2_end_time, _ = deliver_truck(TRUCK_2_IDS, datetime(2025, 1, 1, 9, 5), 2, packages, dist_matrix, addr_map, HUB_ADDRESS)
+
+    # Two-driver rule: Truck 3 can leave when the first driver returns.
+    driver_available = min(t1_end_time, t2_end_time)
+
+    # Package 9 rule: address correction at 10:20; Truck 3 cannot depart before that.
+    earliest_t3 = max(driver_available, ADDRESS_FIX_TIME)
+    miles3, _, _ = deliver_truck(TRUCK_3_IDS, driver_available, 3, packages, dist_matrix, addr_map, HUB_ADDRESS, earliest_departure=earliest_t3)
+
+    return packages, miles1 + miles2 + miles3
+
+
 def run_interface(packages: HashTable, total_miles: float):
     # WHAT: Simple command-line menu for checking package statuses.
     # WHY: This is the required interface for Task 2 section D & E
@@ -354,8 +396,11 @@ def run_interface(packages: HashTable, total_miles: float):
 
         if choice == "1":
             time_input = input("Enter time (HH:MM): ").strip()
-            hours, minutes = map(int, time_input.split(":"))
-            query_time = datetime(2025, 1, 1, hours, minutes)
+            try:
+                query_time = parse_time_input(time_input)
+            except ValueError as exc:
+                print(exc)
+                continue
 
             print(f"\nPackage statuses at {time_input}:")
             print_package_statuses_at_time(packages, query_time)
@@ -375,7 +420,11 @@ if __name__ == "__main__":
     # WHAT: Load data, run deliveries to populate times/statuses, then start the interface.
     # WHY: Status checks only make sense after packages have load/delivery times.
 
-    packages = load_packages("data/WGUPS_Package_File.csv")
+    packages, total_miles = build_simulation()
+
+    # Start the user interface for D1-D3 screenshots.
+    run_interface(packages, total_miles)
+    raise SystemExit
     dist_matrix, addr_map = load_distances("data/WGUPS_Distance_Table.csv")
     hub_key = "Western Governors University\n4001 South 700 East, \nSalt Lake City, UT 84107"
 
