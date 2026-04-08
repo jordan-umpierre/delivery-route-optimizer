@@ -1,45 +1,34 @@
-# WHAT: Import built-in libraries only (allowed).
-# WHY: The rubric forbids external libraries; csv/time are built-in.
+# Standard-library imports only.
 import csv
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# WHAT: Import your custom data structures.
-# WHY: Task 2 requires a custom hash table and a Package object holding all fields.
+# Project data structures.
 from hashtable import HashTable
 from package import Package
 
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
-PACKAGE_CSV = DATA_DIR / "WGUPS_Package_File.csv"
-DISTANCE_CSV = DATA_DIR / "WGUPS_Distance_Table.csv"
+PACKAGE_CSV = DATA_DIR / "delivery_packages.csv"
+DISTANCE_CSV = DATA_DIR / "delivery_distances.csv"
 HUB_ADDRESS = "4001 South 700 East"
 
 
 def load_packages(csv_path: str) -> HashTable:
-    # WHAT: Load all package rows from WGUPS_Package_File.csv into a custom HashTable.
-    # WHY: Packages must be stored/retrieved by package_id efficiently for routing and status checks.
-
-    # WHAT: Create the custom hash table that will store all package records.
-    # WHY: Package ID lookups must be fast during delivery simulation and user status checks.
+    # Store packages by ID for efficient routing and status lookups.
     package_table = HashTable()
 
-    # WHAT: Open the CSV using csv.reader.
-    # WHY: csv.reader correctly handles commas and quoted text in CSV files.
     with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
         reader = csv.reader(f)
 
         for row in reader:
-            # WHAT: Skip non-data header rows and blank lines.
-            # WHY: The provided CSV export includes title/column rows before the package rows.
+            # Skip title rows and blank lines from the provided CSV export.
             if not row or not row[0].strip().isdigit():
                 continue
 
-            # WHAT: Parse the required package columns from the CSV row.
-            # WHY: Task requirements depend on these exact delivery fields being stored with the package.
-            # Expected columns: ID, Address, City, State, Zip, Deadline, Weight, (Special Notes...)
+            # Expected columns: ID, Address, City, State, Zip, Deadline, Weight.
             package_id = int(row[0].strip())
             address = row[1].strip()
             city = row[2].strip()
@@ -48,8 +37,6 @@ def load_packages(csv_path: str) -> HashTable:
             deadline = row[5].strip()
             weight_kilo = row[6].strip()
 
-            # WHAT: Build a Package object holding all required delivery fields for this package ID.
-            # HOW: Map CSV columns into the Package constructor.
             package = Package(
                 package_id=package_id,
                 address=address,
@@ -66,8 +53,6 @@ def load_packages(csv_path: str) -> HashTable:
                 package.corrected_address = "410 S State St"
                 package.corrected_zip_code = "84111"
 
-            # WHAT: Insert the package into the hash table.
-            # WHY: The hash table key is package_id so we can retrieve/update packages efficiently.
             package_table.insert(package_id, package)
 
     return package_table
@@ -75,20 +60,14 @@ def load_packages(csv_path: str) -> HashTable:
 
 def load_distances(csv_path: str) -> Tuple[List[List[float]], Dict[str, int]]:
     """
-    WHAT: Load WGUPS_Distance_Table.csv and build:
-         - distance_matrix: list-of-lists of floats (often lower-triangular / ragged)
-         - address_index_map: location label/address -> row index
-    WHY: The delivery algorithm needs O(1) index-based access to distances between locations.
+    Load the distance matrix and map each location label to a row index.
 
-    NOTE: This loader is intentionally robust:
-          - It skips the title/header/address-list section automatically
-          - It begins when it detects the HUB row containing "HUB" and "0.0"
+    The parser skips the title and address-list rows automatically and begins once
+    it finds the hub row that also contains the first numeric distance value.
     """
     distance_matrix: List[List[float]] = []
     address_index_map: Dict[str, int] = {}
 
-    # WHAT: Open the CSV using csv.reader.
-    # WHY: csv.reader correctly handles commas and quoted text in CSV files.
     with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
         reader = csv.reader(f)
 
@@ -99,24 +78,18 @@ def load_distances(csv_path: str) -> Tuple[List[List[float]], Dict[str, int]]:
             if not row:
                 continue
 
-            # WHAT: Detect the start of the numeric distance section.
-            # WHY: Your CSV includes many non-distance rows before the actual distance grid.
             joined = " ".join(cell.strip() for cell in row if cell.strip())
             if not in_distance_section:
-                # We start when we find a line that includes HUB and also includes a "0.0" value.
                 if ("HUB" in joined.upper()) and any(cell.strip().strip('"') == "0.0" for cell in row):
                     in_distance_section = True
                 else:
                     continue
 
-            # WHAT: Extract a label for the row (location/address-ish text).
-            # WHY: We need a stable mapping from a location string to a matrix index.
             label = None
             for cell in row:
                 c = cell.strip().strip('"')
                 if not c:
                     continue
-                # If it parses as float, it's not a label; keep searching.
                 try:
                     float(c)
                     continue
@@ -127,8 +100,6 @@ def load_distances(csv_path: str) -> Tuple[List[List[float]], Dict[str, int]]:
             if label is None:
                 continue
 
-            # WHAT: Extract all numeric distances from the row.
-            # WHY: The distance grid contains floats; blank cells represent the unused half of the matrix.
             distances: List[float] = []
             for cell in row:
                 c = cell.strip().strip('"')
@@ -137,7 +108,6 @@ def load_distances(csv_path: str) -> Tuple[List[List[float]], Dict[str, int]]:
                 try:
                     distances.append(float(c))
                 except ValueError:
-                    # Ignore non-numeric cells like labels.
                     pass
 
             address_index_map[label] = row_index
@@ -148,8 +118,7 @@ def load_distances(csv_path: str) -> Tuple[List[List[float]], Dict[str, int]]:
 
 
 def get_distance(distance_matrix: List[List[float]], i: int, j: int) -> float:
-    # WHAT: Return the distance between location i and j.
-    # WHY: The WGUPS distance table is typically lower-triangular (only one half filled), so we must safely try (i,j) then (j,i).
+    # The distance table is lower-triangular, so try both directions.
     if i == j:
         return 0.0
 
@@ -207,9 +176,7 @@ def deliver_truck(
         earliest_departure: datetime | None = None
 ) -> Tuple[float, datetime, int]:
 
-    # WHAT: Deliver all packages on one truck using Nearest Neighbor.
-    # WHY: Required core algorithm for the WGUPS delivery simulation.
-    # RETURNS: (total_miles, end_time, end_location_index)
+    # Deliver one truck route using a nearest-neighbor heuristic.
 
     miles = 0.0
     current_time = start_time
@@ -219,7 +186,7 @@ def deliver_truck(
     if earliest_departure is not None and current_time < earliest_departure:
         current_time = earliest_departure
 
-    # Package 9 address correction: At 10:20 a.m. WGUPS receives the corrected address for package 9.
+    # Package 9's corrected address becomes available at 10:20 a.m.
     # Update the package record before routing so the distance lookup uses the correct stop.
     if 9 in truck_ids and current_time >= ADDRESS_FIX_TIME:
         p9 = packages.lookup(9)
@@ -267,7 +234,7 @@ def deliver_truck(
 
 # Truck Package Assignments
 # WHAT: Define which packages are loaded onto each truck.
-# WHY: Keep behavior deterministic and match WGUPS constraints (truck-only, group deliveries, delays).
+# Keep behavior deterministic and aligned with the delivery scenario rules.
 
 # Package 9 address is corrected at 10:20 AM (cannot be delivered before this time).
 ADDRESS_FIX_TIME = datetime(2025, 1, 1, 10, 20)
@@ -286,35 +253,8 @@ TRUCK_2_IDS = [3, 6, 18, 25, 28, 32, 36, 38, 4, 5, 7, 8, 10, 11]
 TRUCK_3_IDS = [2, 9, 12, 17, 21, 22, 23, 24, 26, 27, 33, 35, 39]
 
 
-'''
-# Quick Verification (DISABLED)
-# WHAT: Quick proof that deliveries run and package 9 is not delivered before 10:20.
-# WHY: This was used for testing; the interface below is the deliverable for D1–D3.
-if __name__ == "__main__":
-    packages, total_miles = build_simulation()
-
-    # Start the user interface for D1-D3 screenshots.
-    run_interface(packages, total_miles)
-    raise SystemExit
-    dist_matrix, addr_map = load_distances("data/WGUPS_Distance_Table.csv")
-    hub_key = "Western Governors University\n4001 South 700 East, \nSalt Lake City, UT 84107"
-
-    miles1, t1_end_time, _ = deliver_truck(TRUCK_1_IDS, datetime(2025, 1, 1, 8, 0), 1, packages, dist_matrix, addr_map, hub_key)
-    miles2, t2_end_time, _ = deliver_truck(TRUCK_2_IDS, datetime(2025, 1, 1, 9, 5), 2, packages, dist_matrix, addr_map, hub_key)
-
-    driver_available = min(t1_end_time, t2_end_time)
-    earliest_t3 = max(driver_available, ADDRESS_FIX_TIME)
-
-    miles3, t3_end_time, _ = deliver_truck(TRUCK_3_IDS, driver_available, 3, packages, dist_matrix, addr_map, hub_key, earliest_departure=earliest_t3)
-
-    print("TOTAL miles:", miles1 + miles2 + miles3)
-    print("Package 9:", packages.lookup(9))
-'''
-
-
 def print_package_statuses_at_time(packages: HashTable, query_time: datetime):
-    # WHAT: Display the status of every package at a user-specified time.
-    # WHY: Required interface feature for Task 2 status checks (D1–D3).
+    # Display the status of every package at a user-specified time.
 
     for package_id in range(1, 41):
         p = packages.lookup(package_id)
@@ -383,11 +323,10 @@ def build_simulation() -> Tuple[HashTable, float]:
 
 
 def run_interface(packages: HashTable, total_miles: float):
-    # WHAT: Simple command-line menu for checking package statuses.
-    # WHY: This is the required interface for Task 2 section D & E
+    # Simple command-line menu for checking package statuses.
 
     while True:
-        print("\nWGUPS Package Status Interface")
+        print("\nDelivery Route Optimizer")
         print("1) View all package statuses at a specific time")
         print("2) View total mileage")
         print("3) Exit")
@@ -417,32 +356,5 @@ def run_interface(packages: HashTable, total_miles: float):
 
 
 if __name__ == "__main__":
-    # WHAT: Load data, run deliveries to populate times/statuses, then start the interface.
-    # WHY: Status checks only make sense after packages have load/delivery times.
-
     packages, total_miles = build_simulation()
-
-    # Start the user interface for D1-D3 screenshots.
-    run_interface(packages, total_miles)
-    raise SystemExit
-    dist_matrix, addr_map = load_distances("data/WGUPS_Distance_Table.csv")
-    hub_key = "Western Governors University\n4001 South 700 East, \nSalt Lake City, UT 84107"
-
-    # Truck 1 and Truck 2 have fixed start times based on the scenario.
-    miles1, t1_end_time, _ = deliver_truck(TRUCK_1_IDS, datetime(2025, 1, 1, 8, 0), 1, packages, dist_matrix, addr_map, hub_key)
-    miles2, t2_end_time, _ = deliver_truck(TRUCK_2_IDS, datetime(2025, 1, 1, 9, 5), 2, packages, dist_matrix, addr_map, hub_key)
-
-    # Two-driver rule: Truck 3 can leave when the first driver returns.
-    driver_available = min(t1_end_time, t2_end_time)
-
-    # Package 9 rule: address correction at 10:20; Truck 3 cannot depart before that.
-    earliest_t3 = max(driver_available, ADDRESS_FIX_TIME)
-
-    miles3, _, _ = deliver_truck(TRUCK_3_IDS, driver_available, 3, packages, dist_matrix, addr_map, hub_key, earliest_departure=earliest_t3)
-
-    # WHAT: Total mileage across all trucks.
-    # WHY: Used by the interface menu option to display total mileage.
-    total_miles = miles1 + miles2 + miles3
-
-    # Start the user interface for D1–D3 screenshots.
     run_interface(packages, total_miles)

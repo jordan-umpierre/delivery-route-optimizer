@@ -40,8 +40,8 @@ Python delivery route optimizer that simulates multi-truck package distribution 
     |-- hashtable.py
     |-- package.py
     `-- data/
-        |-- WGUPS_Package_File.csv
-        `-- WGUPS_Distance_Table.csv
+        |-- delivery_packages.csv
+        `-- delivery_distances.csv
 ```
 
 ## How to Run
@@ -65,8 +65,8 @@ If your system uses `python3` instead of `python`, substitute `python3` in eithe
 
 The `data/` folder should contain:
 
-- `WGUPS_Package_File.csv`
-- `WGUPS_Distance_Table.csv`
+- `delivery_packages.csv`
+- `delivery_distances.csv`
 
 ## Test And Verify
 
@@ -85,7 +85,7 @@ Manual checks to try:
 ## Example Menu
 
 ```text
-WGUPS Package Status Interface
+Delivery Route Optimizer
 1) View all package statuses at a specific time
 2) View total mileage
 3) Exit
@@ -93,8 +93,8 @@ WGUPS Package Status Interface
 
 ## How It Works
 
-- Packages are loaded from `data/WGUPS_Package_File.csv` into a custom hash table.
-- Distances are loaded from `data/WGUPS_Distance_Table.csv` into a matrix for route calculations.
+- Packages are loaded from `data/delivery_packages.csv` into a custom hash table.
+- Distances are loaded from `data/delivery_distances.csv` into a matrix for route calculations.
 - Each truck is assigned a deterministic package list based on the scenario constraints.
 - The route planner repeatedly chooses the nearest remaining delivery stop.
 - Package load and delivery times are recorded during the simulation.
@@ -104,5 +104,5 @@ WGUPS Package Status Interface
 
 - Truck assignments are deterministic and scenario-specific.
 - The nearest-neighbor heuristic is fast and explainable, but it is not guaranteed to find a globally optimal route.
-- The program expects the provided WGUPS CSV file format.
+- The program expects the provided delivery-scenario CSV file format.
 
